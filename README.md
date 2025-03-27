@@ -28,3 +28,5 @@ Follow these steps to set up Affinity Bot locally or deploy it to production.
 - Install **cargo-shuttle** 🚀:
  ```bash
  cargo install cargo-shuttle
+```
+- Follow [Blog](https://blog.logrocket.com/building-rust-discord-bot-shuttle-serenity/) to setup your own bot
