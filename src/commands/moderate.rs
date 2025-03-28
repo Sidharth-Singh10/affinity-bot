@@ -27,7 +27,13 @@ pub fn warn(options: &[ResolvedOption]) -> String {
     }
 }
 
-// Is lifetime annotation really needed here? (Scope for Improvement)
+/// Mutes a guild member for a specified duration (in minutes). Optionally, a reason may be provided.
+/// The command updates the guild member's timeout and returns an embed containing details.
+///
+/// Expects options:
+///   - 0: User (required)
+///   - 1: Duration in minutes (required)
+///   - 2: Reason (optional)
 pub async fn mute(
     options: &[ResolvedOption<'_>],
     ctx: &Context,
@@ -44,6 +50,17 @@ pub async fn mute(
         }),
     ) = (options.first(), options.get(1))
     {
+        // Optional reason; default to an empty string if not provided.
+        let reason = if let Some(ResolvedOption {
+            value: ResolvedValue::String(r),
+            ..
+        }) = options.get(2)
+        {
+            r
+        } else {
+            ""
+        };
+
         let until = Timestamp::from_unix_timestamp(
             (std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
@@ -85,13 +102,19 @@ pub async fn mute(
                 .color(Color::RED);
         }
 
-        CreateEmbed::default()
+        let mut embed = CreateEmbed::default()
             .title("User Muted")
             .description(format!("**{}** has been muted", user.tag()))
             .field("User ID", user.id.to_string(), true)
             .field("Duration", format!("{} minutes", time), true)
             .color(Color::RED)
-            .footer(CreateEmbedFooter::new("Muted by Moderation System"))
+            .footer(CreateEmbedFooter::new("Muted by Moderation System"));
+
+        if !reason.is_empty() {
+            embed = embed.field("Reason", reason, false);
+        }
+
+        embed
     } else {
         CreateEmbed::default()
             .title("Error")
@@ -99,6 +122,14 @@ pub async fn mute(
             .color(Color::RED)
     }
 }
+
+/// Bans a guild member. Optionally, a reason may be provided.
+/// The command also deletes messages from the past X days (provided as an integer).
+///
+/// Expects options:
+///   - 0: User (required)
+///   - 1: Days of messages to delete (required)
+///   - 2: Reason (optional)
 pub async fn ban(
     options: &[ResolvedOption<'_>],
     ctx: &Context,
@@ -115,7 +146,16 @@ pub async fn ban(
         }),
     ) = (options.first(), options.get(1))
     {
-        // Get the guild ID from the command's guild_id field
+        let reason = if let Some(ResolvedOption {
+            value: ResolvedValue::String(r),
+            ..
+        }) = options.get(2)
+        {
+            r
+        } else {
+            ""
+        };
+
         let guild_id = match command.guild_id {
             Some(id) => id,
             None => {
@@ -125,6 +165,7 @@ pub async fn ban(
                     .color(Color::RED)
             }
         };
+
         let guild_member = match guild_id.member(&ctx.http, user.id).await {
             Ok(member) => member,
             Err(_) => {
@@ -134,6 +175,7 @@ pub async fn ban(
                     .color(Color::RED)
             }
         };
+
         if let Err(e) = guild_member.ban(&ctx.http, *days as u8).await {
             error!("Failed to timeout member: {:?}", e);
             return CreateEmbed::default()
@@ -142,12 +184,18 @@ pub async fn ban(
                 .color(Color::RED);
         }
 
-        CreateEmbed::default()
+        let mut embed = CreateEmbed::default()
             .title("User Banned")
             .description(format!("**{}** has been banned", user.tag()))
             .field("User ID", user.id.to_string(), true)
             .color(Color::RED)
-            .footer(CreateEmbedFooter::new("banned by Moderation System"))
+            .footer(CreateEmbedFooter::new("banned by Moderation System"));
+
+        if !reason.is_empty() {
+            embed = embed.field("Reason", reason, false);
+        }
+
+        embed
     } else {
         CreateEmbed::default()
             .title("Error")
@@ -188,7 +236,16 @@ pub fn register_mute() -> CreateCommand {
             )
             .required(true),
         )
+        .add_option(
+            CreateCommandOption::new(
+                CommandOptionType::String,
+                "reason",
+                "Optional reason for muting the user",
+            )
+            .required(false),
+        )
 }
+
 pub fn register_ban() -> CreateCommand {
     CreateCommand::new("ban")
         .description("ban a member")
@@ -203,5 +260,13 @@ pub fn register_ban() -> CreateCommand {
                 "Number of days worth of messages to be deleted",
             )
             .required(true),
+        )
+        .add_option(
+            CreateCommandOption::new(
+                CommandOptionType::String,
+                "reason",
+                "Optional reason for banning the user",
+            )
+            .required(false),
         )
 }
