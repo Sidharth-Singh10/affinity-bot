@@ -29,4 +29,12 @@ Follow these steps to set up Affinity Bot locally or deploy it to production.
  ```bash
  cargo install cargo-shuttle
 ```
+- Install sea-orm-cli
+```bash
+cargo install sea-orm-cli@1.1.0
+```
+- Run Migrations
+```bash
+sea-orm-cli migrate fresh
+```
 - Follow [Blog](https://blog.logrocket.com/building-rust-discord-bot-shuttle-serenity/) to setup your own bot
