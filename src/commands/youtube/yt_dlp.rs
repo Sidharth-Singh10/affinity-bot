@@ -100,7 +100,7 @@ pub async fn download_mp3(
 
     // Run yt-dlp command to download best audio quality
     info!("Executing yt-dlp command for URL: {}", youtube_url);
-    let  output = Command::new("yt-dlp")
+    let output = Command::new("yt-dlp")
         .arg("-x") // Extract audio
         .arg("--audio-format")
         .arg("mp3")
@@ -108,7 +108,8 @@ pub async fn download_mp3(
         .arg("0") // Best quality
         .arg("-o")
         .arg(&output_template)
-        .arg(&youtube_url).output();
+        .arg(&youtube_url)
+        .output();
 
     // info!("Command to execute: {:?}", command);
     // let output = command.output();

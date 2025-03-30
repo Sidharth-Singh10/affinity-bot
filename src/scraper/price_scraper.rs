@@ -44,7 +44,7 @@ impl PriceScraper {
 
 // Insert into Price History and Update product table
 async fn update_prices(db: &DatabaseConnection, product_id: i32, price: Decimal) {
-    // Scope for Improvement : Make a transaction 
+    // Scope for Improvement : Make a transaction
     let history = price_history::ActiveModel {
         product_id: Set(product_id),
         price: Set(price),

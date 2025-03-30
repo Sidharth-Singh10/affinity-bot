@@ -1,11 +1,13 @@
-use serenity::all::{CommandOptionType, CreateCommand, CreateCommandOption, ResolvedOption, ResolvedValue};
 use serde::Deserialize;
 use serde::Serialize;
+use serenity::all::{
+    CommandOptionType, CreateCommand, CreateCommandOption, ResolvedOption, ResolvedValue,
+};
 
 #[derive(Serialize, Deserialize)]
 pub struct CreateUrl {
     pub long_url: String,
-    pub months_valid: Option<u32>, 
+    pub months_valid: Option<u32>,
     pub custom_short_code: Option<String>,
 }
 
@@ -19,7 +21,7 @@ pub struct UrlResponse {
 pub async fn shorten(options: &[ResolvedOption<'_>]) -> String {
     // Create a new HTTP client
     let client = reqwest::Client::new();
-    
+
     // Extract the options using .get() method
     let url = match options.first() {
         Some(ResolvedOption {
@@ -28,7 +30,7 @@ pub async fn shorten(options: &[ResolvedOption<'_>]) -> String {
         }) => url.to_string(),
         _ => return "Please provide a valid URL to shorten.".to_string(),
     };
-    
+
     let expiry = match options.get(1) {
         Some(ResolvedOption {
             value: ResolvedValue::Number(expiry),
@@ -36,7 +38,7 @@ pub async fn shorten(options: &[ResolvedOption<'_>]) -> String {
         }) => Some(*expiry as u32),
         _ => None,
     };
-    
+
     let custom_url = match options.get(2) {
         Some(ResolvedOption {
             value: ResolvedValue::String(custom_url),
@@ -44,46 +46,53 @@ pub async fn shorten(options: &[ResolvedOption<'_>]) -> String {
         }) => Some(custom_url.to_string()),
         _ => None,
     };
-    
+
     // Check if URL is provided
     if url.is_empty() {
         return "Please provide a URL to shorten.".to_string();
     }
-    
+
     // Create the request body
     let create_url = CreateUrl {
         long_url: url,
         months_valid: expiry,
         custom_short_code: custom_url,
     };
-    
+
     // Send the request to the API
-    match client.post("https://groti.me/api/urls")
+    match client
+        .post("https://groti.me/api/urls")
         .json(&create_url)
         .send()
-        .await {
-            Ok(response) => {
-                match response.status() {
-                    reqwest::StatusCode::OK | reqwest::StatusCode::CREATED => {
-                        match response.json::<UrlResponse>().await {
-                            Ok(url_response) => {
-                                // Format the response
-                                format!(
+        .await
+    {
+        Ok(response) => {
+            match response.status() {
+                reqwest::StatusCode::OK | reqwest::StatusCode::CREATED => {
+                    match response.json::<UrlResponse>().await {
+                        Ok(url_response) => {
+                            // Format the response
+                            format!(
                                     "URL shortened successfully!\nShort URL: https://groti.me/{}\nExpires on: {}", 
-                                    url_response.short_code, 
+                                    url_response.short_code,
                                     url_response.expiry_date
                                 )
-                            },
-                            Err(_) => "Successfully shortened URL, but couldn't parse the response.".to_string()
                         }
-                    },
-                    reqwest::StatusCode::BAD_REQUEST => "Bad request. Please check your URL and try again.".to_string(),
-                    reqwest::StatusCode::NOT_FOUND => "This custom URL is already taken. Please try another one.".to_string(),
-                    _ => format!("Error: HTTP status {}", response.status())
+                        Err(_) => "Successfully shortened URL, but couldn't parse the response."
+                            .to_string(),
+                    }
                 }
-            },
-            Err(e) => format!("Failed to contact the URL shortening service: {}", e)
+                reqwest::StatusCode::BAD_REQUEST => {
+                    "Bad request. Please check your URL and try again.".to_string()
+                }
+                reqwest::StatusCode::NOT_FOUND => {
+                    "This custom URL is already taken. Please try another one.".to_string()
+                }
+                _ => format!("Error: HTTP status {}", response.status()),
+            }
         }
+        Err(e) => format!("Failed to contact the URL shortening service: {}", e),
+    }
 }
 
 pub fn register_cut() -> CreateCommand {

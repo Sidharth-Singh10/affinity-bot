@@ -16,6 +16,7 @@ use shuttle_runtime::SecretStore;
 use std::error::Error;
 use tokio::time::Instant;
 use tracing::{error, info};
+use moderation::punishments::punish_member;
 mod commands;
 mod config;
 mod cron;
@@ -77,78 +78,6 @@ impl Bot {
 
         Ok(())
     }
-    async fn punish_member(
-        &self,
-        ctx: &Context,
-        msg: &Message,
-        action: Option<ModAction>,
-    ) -> Result<(), Box<dyn Error>> {
-        match action {
-            Some(ModAction::Mute(duration)) => {
-                if let Some(guild_id) = msg.guild_id {
-                    if let Ok(mut member) = guild_id.member(&ctx.http, msg.author.id).await {
-                        let until = Timestamp::from_unix_timestamp(
-                            (std::time::SystemTime::now()
-                                .duration_since(std::time::UNIX_EPOCH)?
-                                .as_secs() as i64)
-                                + duration.as_secs() as i64,
-                        )?;
-
-                        if let Err(e) = member
-                            .disable_communication_until_datetime(&ctx.http, until)
-                            .await
-                        {
-                            error!("Failed to timeout member: {:?}", e);
-                        }
-                        msg.channel_id
-                            .say(
-                                &ctx.http,
-                                format!(
-                                    "User {} has been muted for {} violations",
-                                    msg.author.mention(),
-                                    self.violations_tracker
-                                        .get_violation_count(msg.author.id)
-                                        .unwrap()
-                                ),
-                            )
-                            .await?;
-                    }
-                }
-            }
-            Some(ModAction::Ban) => {
-                msg.guild_id
-                    .ok_or("Not in guild")?
-                    .ban_with_reason(
-                        &ctx.http,
-                        msg.author.id,
-                        7, // Delete messages from last 7 days
-                        "Exceeded violation limit",
-                    )
-                    .await?;
-                msg.channel_id
-                    .say(
-                        &ctx.http,
-                        format!(
-                            "User {} has been banned for excessive violations",
-                            msg.author.name
-                        ),
-                    )
-                    .await?;
-            }
-            Some(ModAction::None) => {
-                let warning_message:String = format!("You're sending messages too quickly {}. Please slow down to avoid being timed out.",msg.author.id.mention());
-
-                msg.channel_id.say(&ctx.http, warning_message).await?;
-            }
-            None => {
-                msg.channel_id
-                    .say(&ctx.http, "Error checking violations")
-                    .await?;
-            }
-        }
-
-        Ok(())
-    }
 }
 
 #[async_trait]
@@ -173,7 +102,7 @@ impl EventHandler for Bot {
                 .get_appropriate_action(msg.author.id, &self.violation_threshold);
 
             // Unused Result (Scope of Improvement)
-            let _ = self.punish_member(&ctx, &msg, action).await;
+            let _ = punish_member(&ctx, &msg, action, &self.violations_tracker).await;
 
             return;
         }
