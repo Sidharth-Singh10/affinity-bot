@@ -6,3 +6,4 @@ pub mod scrape;
 pub mod welcome_message;
 pub mod wonderful_command;
 pub mod youtube;
+pub mod vote;
