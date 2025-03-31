@@ -28,10 +28,10 @@ pub async fn scrape_products(urls: Vec<i32>) -> Result<Vec<String>, Box<dyn std:
             true,
         )?;
 
-        tab.evaluate(&format!(r#"
+        tab.evaluate(r#"
             const originalFetch = window.fetch;
-            window.fetch = function(input, init) {{
-                const headers = {{
+            window.fetch = function(input, init) {
+                const headers = {
                     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
                     'Accept-Language': 'en-US,en;q=0.9',
                     'Cache-Control': 'max-age=0',
@@ -45,12 +45,12 @@ pub async fn scrape_products(urls: Vec<i32>) -> Result<Vec<String>, Box<dyn std:
                     'Sec-Fetch-Mode': 'navigate',
                     'Sec-Fetch-Site': 'same-origin',
                     'Sec-Fetch-User': '?1'
-                }};
-                init = init || {{}};
-                init.headers = {{ ...headers, ...init.headers }};
+                };
+                init = init || {};
+                init.headers = { ...headers, ...init.headers };
                 return originalFetch(input, init);
-            }};
-        "#), true)?;
+            };
+        "#, true)?;
 
         let url2 = format!("https://www.myntra.com/{}", url);
         tab.navigate_to(&url2)?;
@@ -76,18 +76,16 @@ pub async fn scrape_products(urls: Vec<i32>) -> Result<Vec<String>, Box<dyn std:
         let price = document
             .select(&price_selector)
             .next()
-            .and_then(|el| {
+            .map(|el| {
                 let price_text = el.text().collect::<String>();
                 tracing::info!(" the prices text {price_text:?}");
-                Some(
-                    price_text
+                price_text
                         .trim()
                         .replace("MRP₹", "")
                         .replace("₹", "")
                         .replace(',', "")
                         .trim()
-                        .to_string(),
-                )
+                        .to_string()
             })
             .unwrap_or("0".to_string());
 

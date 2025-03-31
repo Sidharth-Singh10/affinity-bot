@@ -3,12 +3,12 @@ use config::email::EmailConfig;
 use cron::notifications::{self, NotificationManager};
 use events::self_role_assign::self_role_assign;
 use moderation::spam::SpamChecker;
-use moderation::violations::{ModAction, ViolationThresholds, ViolationsTracker};
+use moderation::violations::{ViolationThresholds, ViolationsTracker};
 use scraper::price_scraper::PriceScraper;
 use sea_orm::{Database, DatabaseConnection};
 use serenity::all::{
     ChannelId, Command, CreateInteractionResponse, CreateInteractionResponseMessage, GuildId,
-    Interaction, Member, Message, MessageId, Reaction, ReactionType, Ready, Timestamp, User,
+    Interaction, Member, Message, MessageId, Reaction, ReactionType, Ready, User,
 };
 use serenity::async_trait;
 use serenity::prelude::*;

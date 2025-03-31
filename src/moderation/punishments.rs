@@ -1,21 +1,10 @@
-use anyhow::Context as _;
-use crate::config::email::EmailConfig;
-use crate::cron::notifications::{self, NotificationManager};
-use crate::events::self_role_assign::self_role_assign;
-use crate::moderation::spam::SpamChecker;
-use crate::moderation::violations::{ModAction, ViolationThresholds, ViolationsTracker};
-use crate::scraper::price_scraper::PriceScraper;
-use sea_orm::{Database, DatabaseConnection};
+use crate::moderation::violations::{ModAction, ViolationsTracker};
 use serenity::all::{
-    ChannelId, Command, CreateInteractionResponse, CreateInteractionResponseMessage, GuildId,
-    Interaction, Member, Message, MessageId, Reaction, ReactionType, Ready, Timestamp, User,
+    Message, Timestamp,
 };
-use serenity::async_trait;
 use serenity::prelude::*;
-use shuttle_runtime::SecretStore;
 use std::error::Error;
-use tokio::time::Instant;
-use tracing::{error, info};
+use tracing::error;
 
 pub async fn punish_member(
     ctx: &Context,

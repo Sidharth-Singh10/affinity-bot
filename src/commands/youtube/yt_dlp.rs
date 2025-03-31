@@ -8,7 +8,7 @@ use serenity::all::{
 use serenity::Result as SerenityResult;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::{Command, Output};
+use std::process::Command;
 use tokio::time::{sleep, Duration};
 use tracing::log::{error, info};
 

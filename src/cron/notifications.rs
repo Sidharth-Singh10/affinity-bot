@@ -71,19 +71,17 @@ impl NotificationPreference for MyntraNotification {
                 .map(|ph| (ph.recorded_at, ph.price))
                 .collect();
 
-            let current_price = prices.first().map(|(_, p)| p.clone()).unwrap_or_default();
-            let highest_price = prices
+            let current_price = prices.first().map(|(_, p)| *p).unwrap_or_default();
+            let highest_price = *prices
                 .iter()
                 .map(|(_, p)| p)
                 .max()
-                .unwrap_or(&current_price)
-                .clone();
-            let lowest_price = prices
+                .unwrap_or(&current_price);
+            let lowest_price = *prices
                 .iter()
                 .map(|(_, p)| p)
                 .min()
-                .unwrap_or(&current_price)
-                .clone();
+                .unwrap_or(&current_price);
 
             let email = PriceHistoryEmail::new(
                 product.product_id.to_string(), // Scope for Improvement
@@ -97,7 +95,7 @@ impl NotificationPreference for MyntraNotification {
             email
                 .send_price_history()
                 .await
-                .map_err(|e| DbErr::Custom(e))?;
+                .map_err(DbErr::Custom)?;
         }
 
         Ok(())
@@ -137,10 +135,8 @@ impl NotificationHandler for MyntraHandler {
 
         for pref in preferences {
             let notification = MyntraNotification::from(pref);
-            if notification.should_notify(db).await? {
-                if notification.send_notification(db).await.is_ok() {
-                    notification.update_last_notified(db).await?;
-                }
+            if notification.should_notify(db).await? && notification.send_notification(db).await.is_ok() {
+                notification.update_last_notified(db).await?;
             }
         }
         Ok(())
