@@ -278,6 +278,10 @@ impl EventHandler for Bot {
                         }
                     }
                 }
+                "serverstats" => {
+                let response_content = commands::serverstats::run(&ctx, &command).await;
+                utils::util::create_response(&ctx, &command, response_content).await;
+            }
                 "poll" => {
                     let response = commands::vote::run(&ctx, &command).await;
                     utils::util::create_response(&ctx, &command, response).await;
@@ -329,6 +333,7 @@ impl EventHandler for Bot {
                     commands::moderate::register_ban(),
                     commands::cargocut::shorten::register_cut(),
                     commands::youtube::yt_dlp::register_youtube(),
+                    commands::serverstats::register(),
                     commands::vote::register(),
                 ],
             )
@@ -350,8 +355,10 @@ async fn serenity(
     let intents = GatewayIntents::GUILD_MESSAGES
         | GatewayIntents::MESSAGE_CONTENT
         | GatewayIntents::GUILD_MEMBERS
-        | GatewayIntents::GUILD_MESSAGE_REACTIONS;
-
+        | GatewayIntents::GUILD_MESSAGE_REACTIONS
+        | GatewayIntents::GUILD_PRESENCES
+        | GatewayIntents::GUILDS;
+    
     let db = Database::connect(secrets.get("DATABASE_URL").unwrap())
         .await
         .expect("could not connect");
